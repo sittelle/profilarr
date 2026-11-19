@@ -2,7 +2,7 @@
 
 Profilarr 2.3.1 or later, using Dictionarry schema 1.1.0. Apply the SQL operations in numeric order through Profilarr. Select and sync the desired profile and quality-size presets in the Radarr and Sonarr sync settings after updating.
 
-The profile accepts HDTV-720p as a fallback, then HDTV-1080p, then 1080p WEB and Blu-ray. Other 720p qualities and 1080p remux remain disabled. Language scoring and size limits still apply.
+The profile ranks 1080p above 720p. HDTV, WEBRip, WEB-DL and Blu-ray are equal within each resolution, with language scores deciding preference. 1080p remux remains disabled. Size limits still apply.
 
 ## Validation
 

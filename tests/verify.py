@@ -29,10 +29,19 @@ rows = con.execute("""SELECT COALESCE(quality_name, quality_group_name), positio
                       FROM quality_profile_qualities WHERE quality_profile_name = 'Personal - 1080p DE-EN'""").fetchall()
 quality = {name: (position, enabled, cutoff) for name, position, enabled, cutoff in rows}
 assert len({row[1] for row in rows}) == len(rows), 'Duplicate quality positions'
-assert quality['HDTV-720p'][1] == quality['HDTV-1080p'][1] == 1
-assert quality['720p WEB + Blu-ray'][1] == quality['Remux-1080p'][1] == 0
-assert quality['1080p WEB + Blu-ray'][1:] == (1, 1)
-assert quality['HDTV-720p'][0] < quality['HDTV-1080p'][0] < quality['1080p WEB + Blu-ray'][0]
+assert quality['720p'][1:] == (1, 0)
+assert quality['1080p'][1:] == (1, 1)
+assert quality['720p'][0] < quality['1080p'][0]
+assert quality['Remux-1080p'][1] == 0
+for resolution in ('720p', '1080p'):
+    members = {row[0] for row in con.execute(
+        "SELECT quality_name FROM quality_group_members WHERE quality_profile_name = ? AND quality_group_name = ?",
+        ('Personal - 1080p DE-EN', resolution))}
+    assert members == {f'HDTV-{resolution}', f'WEBRip-{resolution}', f'WEBDL-{resolution}', f'Bluray-{resolution}'}
+source_scores = con.execute("""SELECT score FROM quality_profile_custom_formats
+    WHERE quality_profile_name = 'Personal - 1080p DE-EN' AND custom_format_name LIKE 'Personal - Source %'""").fetchall()
+assert len(source_scores) == 3 and all(score == 0 for (score,) in source_scores)
+assert con.execute("SELECT upgrade_until_score FROM quality_profiles WHERE name = 'Personal - 1080p DE-EN'").fetchone() == (3000,)
 for table, preset in [('radarr_quality_definitions', 'Personal - Film 133 MB-min'),
                       ('sonarr_quality_definitions', 'Personal - Serie 100 MB-min')]:
     for resolution in ('720p', '1080p'):

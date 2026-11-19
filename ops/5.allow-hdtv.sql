@@ -1,18 +1,28 @@
--- Allow HDTV as a lower-priority option at each resolution. Keep the other
--- 720p sources disabled as configured in 4.automatic-1080p-dual.sql.
-UPDATE quality_profile_qualities
-SET position = CASE
-    WHEN quality_name = 'HDTV-720p' THEN 0
-    WHEN quality_group_name = '720p WEB + Blu-ray' THEN 1
-    WHEN quality_name = 'HDTV-1080p' THEN 2
-    WHEN quality_group_name = '1080p WEB + Blu-ray' THEN 3
-    ELSE position + 4
-END,
-    enabled = CASE WHEN quality_name IN ('HDTV-720p', 'HDTV-1080p') THEN 1 ELSE enabled END
-WHERE quality_profile_name = 'Personal - 1080p DE-EN';
+-- Treat HDTV, WEB and Blu-ray as equal within each resolution.
+DELETE FROM quality_profile_qualities
+WHERE quality_profile_name = 'Personal - 1080p DE-EN'
+  AND quality_name IN ('HDTV-720p', 'HDTV-1080p');
+
+INSERT INTO quality_group_members (quality_profile_name, quality_group_name, quality_name, position)
+VALUES ('Personal - 1080p DE-EN', '720p WEB + Blu-ray', 'HDTV-720p', 3),
+       ('Personal - 1080p DE-EN', '1080p WEB + Blu-ray', 'HDTV-1080p', 3);
+
+UPDATE quality_groups SET name = '720p'
+WHERE quality_profile_name = 'Personal - 1080p DE-EN' AND name = '720p WEB + Blu-ray';
+UPDATE quality_groups SET name = '1080p'
+WHERE quality_profile_name = 'Personal - 1080p DE-EN' AND name = '1080p WEB + Blu-ray';
+
+UPDATE quality_profile_qualities SET enabled = 1
+WHERE quality_profile_name = 'Personal - 1080p DE-EN' AND quality_group_name = '720p';
+
+-- Source bonuses must not override or break ties in language scores.
+UPDATE quality_profile_custom_formats SET score = 0
+WHERE quality_profile_name = 'Personal - 1080p DE-EN'
+  AND custom_format_name IN ('Personal - Source webrip', 'Personal - Source web_dl', 'Personal - Source bluray');
 
 UPDATE quality_profiles
-SET description = '1080p preferred; HDTV-720p fallback. Recognised DE+EN > probable German dual audio > EN > DE within each quality.'
+SET description = '1080p > 720p; equal sources within each resolution. Recognised DE+EN > probable German dual audio > EN > DE.',
+    upgrade_until_score = 3000
 WHERE name = 'Personal - 1080p DE-EN';
 
 -- Apply the existing size limits to the newly enabled qualities.
